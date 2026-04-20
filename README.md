@@ -14,15 +14,20 @@
 本实验环境不是完整的 `systemd` 系统，而是 Docker 容器，因此 `rsyslog` 的启动方式与普通虚拟机或物理机有所不同。
 
 ## 实验准备
+
 1. 安装 rsyslog
 执行以下命令安装 rsyslog：
-
+```
 sudo dnf install -y rsyslog
+```
+
 安装完成后，执行以下命令检查是否安装成功：
-
+```
 which rsyslogd
+```
+```
 rpm -q rsyslog
-
+```
 2. Docker 容器环境说明
 在本实验环境中，执行以下命令：
 
@@ -35,11 +40,13 @@ System has not been booted with systemd as init system
 ## 配置 rsyslog
 1. 修改 /etc/rsyslog.conf
 编辑配置文件：
-
+```
 sudo vi /etc/rsyslog.conf
+```
 在文件末尾加入以下内容：
-
+```
 user.*    /var/log/test.log
+```
 该规则表示：
 
 所有 user 类别日志
@@ -50,12 +57,12 @@ user.*    /var/log/test.log
 
 module(load="imuxsock"
        SysSock.Use="off")
+       
 module(load="imjournal"
        StateFile="/run/log/imjournal.state")
 这表示关闭本地日志 socket 接收，并尝试通过 imjournal 从 journald 中读取本地日志。
 
 但是当前实验平台是 Docker 容器，没有完整的 systemd/journald 环境，因此会导致：
-
 logger 发出的本地日志无法被 rsyslogd 接收
 程序写出的本地日志也无法进入日志文件
 因此，需要将其修改为：
@@ -72,30 +79,36 @@ SysSock.Use="off"
 由于 Docker 容器中不能使用 systemctl，本实验采用手动启动方式。
 
 1. 启动命令
+```
 sudo rsyslogd -i /run/rsyslogd.pid
-
+```
 2. 检查是否启动成功
+```
 ps -ef | grep rsyslogd
+```
 示例输出：
-
+```
 root        1952       1  0 13:10 ?        00:00:00 rsyslogd -i /run/rsyslogd.pid
-
+```
 3. 若需重启 rsyslogd
+```
 sudo pkill rsyslogd
 sudo rm -f /run/rsyslogd.pid
 sudo rm -f /var/run/rsyslogd.pid
 sudo rsyslogd -i /run/rsyslogd.pid
-
+```
 ## 验证 rsyslog 配置
 在运行守护进程程序之前，可先使用 logger 测试日志链路是否正常。
 
 1. 测试命令
+```
 logger -p user.info "hello test"
 tail -n 20 /var/log/test.log
-
+```
 2. 示例输出
+```
 Apr 20 13:10:18 euler-container-30047 szu: hello test
-
+```
 3. 结果说明
 若能看到该输出，说明：
 
@@ -105,24 +118,33 @@ user.* /var/log/test.log 规则已生效
 
 ## 编译与运行
 1. 编译程序
+```
 gcc daemon.c -o daemon -Wall
-
+```
 2. 运行程序
+```
 ./daemon
+```
 程序执行后命令会立即返回，这是正常现象。因为父进程退出后，子进程已经作为后台守护进程继续运行。
 
 ## 进程状态查看
 1. 查看进程
+```
 ps -ef | grep daemon
+```
 示例输出：
+```
 szu         2151       1  0 13:12 ?        00:00:00 ./daemon
-
+```
 2. 查看详细状态
+```
 ps -o pid,ppid,tty,stat,cmd -C daemon
+```
 示例输出：
+```
 PID    PPID TT       STAT CMD
 2151      1 ?        S    ./daemon
-
+```
 3. 结果分析
 从上述结果可以看出：
 
@@ -140,13 +162,15 @@ S 不是判断守护进程的唯一依据
 真正的依据是后台运行、脱离终端、父进程退出后被系统接管
 日志结果查看
 执行：
-
+```
 tail -n 20 /var/log/test.log
+```
 示例输出：
-
+```
 Apr 20 13:12:12 euler-container-30047 daemon[2151]: 测试守护进程!
 Apr 20 13:12:20 euler-container-30047 daemon[2151]: 系统时间: Mon Apr 20 13:12:20 2026
 Apr 20 13:12:28 euler-container-30047 daemon[2151]: 系统时间: Mon Apr 20 13:12:28 2026
+```
 结果分析
 从日志结果可知：
 
