@@ -1,6 +1,6 @@
 # openEuler Docker 环境下守护进程与 `rsyslog` 实验
 
-为了高效利用系统资源，课程改用 Docker 容器的 openEuler 系统作为学生实验环境，由于实验环境不是完整的 `systemd` 因此 `rsyslog` 的启动方式与普通虚拟机或物理机有所不同。现给出指导步骤。
+为了高效利用系统资源，课程改用 Docker 容器的 openEuler 系统作为学生实验环境，由于实验环境不是完整的 `systemd` ，因此 `rsyslog` 的启动方式与普通虚拟机或物理机有所不同。现给出指导步骤。
 
 ## 项目简介
 
@@ -37,9 +37,7 @@ systemctl status rsyslog
 通常会报错：`System has not been booted with systemd as init system`。这是因为当前实验平台是 Docker 容器，`PID 1` 不是 `systemd`。因此，本实验不能使用 `systemctl` 管理 `rsyslog`，而应采用手动启动 `rsyslogd` 的方式。
 
 ## 配置 `rsyslog`
-1. 修改 `/etc/rsyslog.conf`
-
-编辑配置文件：
+1. 修改配置文件 `/etc/rsyslog.conf`
 ```
 sudo vi /etc/rsyslog.conf
 ```
@@ -65,8 +63,8 @@ module(load="imjournal"
 但是当前实验平台是 Docker 容器，没有完整的 `systemd/journald` 环境，因此会导致：
 - `logger` 发出的本地日志无法被 `rsyslogd` 接收
 - 程序写出的本地日志也无法进入日志文件
-因此，需要将其修改为：
 
+因此，需要将其修改为：
 ```
 module(load="imuxsock")
 
@@ -111,10 +109,9 @@ Apr 20 13:10:18 euler-container-30047 szu: hello test
 ```
 3. 结果说明
 若能看到该输出，说明：
-
-`rsyslogd` 已正常运行
-`user.* /var/log/test.log` 规则已生效
-本地日志 `socket` 接收已恢复正常
+- `rsyslogd` 已正常运行
+- `user.* /var/log/test.log` 规则已生效
+- 本地日志 `socket` 接收已恢复正常
 
 ## 编译与运行
 1. 编译程序
